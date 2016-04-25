@@ -6,8 +6,8 @@ class Base():
 
     def __init__(self):
         self.client = APIClient('https://mirantis.testrail.com')
-        self.client.user = 'sturivnyi@mirantis.com'
-        self.client.password = 'asr5znW0tq!'
+        self.client.user = '@.com'
+        self.client.password = ' '
 
 ## Add result ======================
 
