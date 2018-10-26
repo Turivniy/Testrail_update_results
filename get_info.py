@@ -1,10 +1,12 @@
 #! /usr/bin/python
 
 from testrail import *
+from config import USER
+from config import PASS
 
 client = APIClient('https://mirantis.testrail.com')
-client.user = '@.com'
-client.password = ''
+client.user = USER
+client.password = PASS
 
 ## Add result ======================
 
@@ -28,20 +30,46 @@ add_result = {
 }
 
 
-tests = client.send_get('get_tests/8788') # plan id
-# print 'test:', tests[44]
+class GetFailedTests:
+    def __init__(self, plan_id):
+        self.plan_id = plan_id
 
-for i in tests:
-    if i['status_id'] == 5 and 'tempest.api.object_storage' in i['custom_test_group']:
-        print 'id: {0}  status_id: {1} name {2}'.format(i['id'], i['status_id'], i['custom_test_group']) #   status_id 1 - pass 5 - fail 8 - prod_fail
-        result = client.send_post('add_result/{0}'.format(i['id']), add_result)
-        print result
+    def get_plan(self):
+        return client.send_get('get_plan/{}'.format(self.plan_id))
+
+    def get_suites(self):
+        plan = self.get_plan()
+        all_suites_ids = []
+        for s in plan['entries']:
+            all_suites_ids.append(s['runs'][0]['id'])
+        return all_suites_ids
+
+    def get_tests_results_by_suite(self, suite_id):
+        return client.send_get('get_tests/{}'.format(suite_id))
+
+    def get_all_tests_results(self):
+        all_suites = self.get_suites()
+
+        all_tests = []
+        for suite in all_suites:
+            test_results = self.get_tests_results_by_suite(suite)
+            all_tests.append(test_results)
+
+        return all_tests
+
+    def get_failed_tests(self):
+        # test['status_id'] == 5 failed test
+        # test['status_id'] == 9 test failed
+        all_tests_in_all_suites = self.get_all_tests_results()
+
+        failed_tests = []
+        for tests_in_suite in all_tests_in_all_suites:
+            for test in tests_in_suite:
+                if test['status_id'] == 9:
+                    failed_tests.append(test)
+
+        return failed_tests
 
 
-
-
-
-#
-#
-# rs = client.send_post('add_result/4556564', add_result)
-# print rs
+tests = GetFailedTests('51082')
+print(len(tests.get_failed_tests()))

@@ -1,5 +1,5 @@
 #
-# TestRail API binding for Python 2.x (API v2, available since 
+# TestRail API binding for Python 3.x (API v2, available since
 # TestRail 3.0)
 #
 # Learn more:
@@ -10,7 +10,8 @@
 # Copyright Gurock Software GmbH. See license.md for details.
 #
 
-import urllib2, json, base64
+import urllib.request, urllib.error
+import json, base64
 
 class APIClient:
 	def __init__(self, base_url):
@@ -52,21 +53,27 @@ class APIClient:
 
 	def __send_request(self, method, uri, data):
 		url = self.__url + uri
-		request = urllib2.Request(url)
+		request = urllib.request.Request(url)
 		if (method == 'POST'):
-			request.add_data(json.dumps(data))
-		auth = base64.b64encode('%s:%s' % (self.user, self.password))
+			request.data = bytes(json.dumps(data), 'utf-8')
+		auth = str(
+			base64.b64encode(
+				bytes('%s:%s' % (self.user, self.password), 'utf-8')
+			),
+			'ascii'
+		).strip()
 		request.add_header('Authorization', 'Basic %s' % auth)
 		request.add_header('Content-Type', 'application/json')
 
 		e = None
 		try:
-			response = urllib2.urlopen(request).read()
-		except urllib2.HTTPError as e:
-			response = e.read()
+			response = urllib.request.urlopen(request).read()
+		except urllib.error.HTTPError as ex:
+			response = ex.read()
+			e = ex
 
 		if response:
-			result = json.loads(response)
+			result = json.loads(response.decode())
 		else:
 			result = {}
 
@@ -75,7 +82,7 @@ class APIClient:
 				error = '"' + result['error'] + '"'
 			else:
 				error = 'No additional error message received'
-			raise APIError('TestRail API returned HTTP %s (%s)' % 
+			raise APIError('TestRail API returned HTTP %s (%s)' %
 				(e.code, error))
 
 		return result
