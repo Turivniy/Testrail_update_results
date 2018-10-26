@@ -71,5 +71,6 @@ class GetFailedTests:
         return failed_tests
 
 
-tests = GetFailedTests('51082')
-print(len(tests.get_failed_tests()))
+if __name__ == '__main__':
+    tests = GetFailedTests('51082')
+    print(len(tests.get_failed_tests()))
